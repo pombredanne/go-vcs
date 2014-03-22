@@ -2,6 +2,7 @@ package vcs
 
 import (
 	"os"
+	"time"
 )
 
 type VCS interface {
@@ -28,18 +29,36 @@ var VCSByName = map[string]VCS{
 	"hg":  Hg,
 }
 
+type Commit struct {
+	ID          string
+	AuthorName  string
+	AuthorEmail string
+
+	Message string
+
+	// AuthorDate is the date when this commit was originally made. (It may
+	// differ from the commit date, which is changed during rebases, etc.)
+	AuthorDate time.Time
+}
+
 type Repository interface {
 	Dir() string // The repository's root directory.
 	VCS() VCS
 
+	// CurrentCommitID returns the commit ID of the HEAD or tip.
+	CurrentCommitID() (string, error)
+
 	// Downloads updates to the repository from the default remote.
 	Download() error
+
+	// CommitLog returns a list of commits in the current HEAD/tip.
+	CommitLog() ([]*Commit, error)
 
 	// CheckOut returns the path of a directory containing a working tree at revision rev. CheckOut
 	// assumes that rev is local or has already been fetched; it does not update the repository.
 	CheckOut(rev string) (dir string, err error)
 
-	ReadFileAtRevision(path string, rev string) ([]byte, error)
+	ReadFileAtRevision(path string, rev string) ([]byte, FileType, error)
 }
 
 // Clones the VCS repository from a remote URL to dir.
